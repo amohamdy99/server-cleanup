@@ -2,34 +2,90 @@
 
 import os
 import re
+from colorama import Fore, Back, Style
 
-mp4_file_regex = re.compile(r'[12][0-9]{3}\-[01][0-9]\-[0-3][0-9]\-[a-z]+[0-9]+(.*)(\.mp4)$')
-# [12][0-9]{3}\-[01][0-9]\-[03][0-9]\-[a-z]+[0-9]+(.*)(\.mp4)
-def getCorrectMP4(lst):
-    return list(filter(mp4_file_regex.match, lst))
+mp4_file_regex = re.compile (r'[12][0-9]{3}\-[01][0-9]\-[0-3][0-9]\-[a-z]+[0-9]+(.*)(\.mp4)$')
+def isCorrectMP4(s):
+    return mp4_file_regex.match (s)
 
-def isMP4(name):
-    return name[-4:] == '.mp4'
 
-def removeNonMP4(lst):
-    print(lst)
-    mp4_files = []
-    for file in lst:
-        if isMP4(file):
-            mp4_files.append(file)
-    return mp4_files
-
-def check_dir (dir):
+def unpack_file (file):
+    return int (file[0:4]), int (file[5:7]), int (file[8:10]), file[11: file.find ('-', 11)]
     
+PATH_105 = '/'
+PATH_106 = '/Users/amohamdy/Documents/projects/lina-academic-deletion-automation/106/'
+def file_is_missing (file):
+    year, month, day, course = unpack_file (file)
+    if os.path.exists (PATH_106 + course):
+        folder = re.compile (r'')
+    elif os.path.exists (PATH_105 + course):
+        return false
+    return True
 
+def check_dir (path, checked, dups, missing, unchecked):
+    if (os.path.isfile (path)): # base case
+        file = path[path.rfind ('/') + 1:]
+        if not isCorrectMP4 (file): # incorrect video format -- cannot process
+            unchecked.append (path)
+            return
+        
+        if path in checked: # duplicate file 
+            print ("Duplicate file:", path)
+            return
+
+        checked.add (path) # avoids double checking duplicates
+        if file_is_missing (file):
+            missing.append (path )
+        else:
+            dups.append (path)
+
+    else: # recursive case
+        orig_dir = os.getcwd ()
+        print ("Entering", path)
+        os.chdir (path)
+        
+        for entry in os.listdir ():
+            check_dir (path + entry, checked, dups, missing, unchecked)
+        
+        print ("Exiting", path)
+        os.chdir (orig_dir)
+        
+        
 AM_PATH = "/Users/amohamdy/Documents/projects/lina-academic-deletion-automation/academic-simulator/" 
 def main():
-    os.chdir (AM_PATH)
-    all_files = os.listdir ()
-    print ("all files:", all_files)
-    mp4_files = getCorrectMP4 (all_files)
-    print ("mp4's:", mp4_files)
+    checked = set([])
+    dups = []
+    missing = []
+    unchecked = []
+    check_dir (AM_PATH, checked, dups, missing, unchecked)
+    print()
 
+    # Printing
+    print (Style.BRIGHT + Fore.RED + '----------------------- MISSING -----------------------')
+    for video in missing:
+        print (video)
+    print(Style.RESET_ALL)
+
+    print (Style.BRIGHT + Fore.GREEN + '----------------------- DUPLICATES -----------------------')
+    for video in dups:
+        print (video)
+    print(Style.RESET_ALL)
+    
+    print (Style.BRIGHT + Fore.YELLOW + '----------------------- UNCHECKED -----------------------')
+    for video in unchecked:
+        print (video)
+    print(Style.RESET_ALL)
 
 if __name__ == '__main__':
     main()
+
+
+# def isMP4(name):
+#     return name[-4:] == '.mp4'
+
+# def removeNonMP4(lst):
+#     print(lst)
+#     for file in lst:
+#         if isMP4(file):
+#             mp4_files.append(file)
+#     return mp4_files
