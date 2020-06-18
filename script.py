@@ -10,16 +10,38 @@ def isCorrectMP4(s):
 
 
 def unpack_file (file):
-    return int (file[0:4]), int (file[5:7]), int (file[8:10]), file[11: file.find ('-', 11)]
+    return file[0:4], file[5:7], file[8:10], file[11: file.find ('-', 11)]
     
 PATH_105 = '/'
 PATH_106 = '/Users/amohamdy/Documents/projects/lina-academic-deletion-automation/106/'
+
 def file_is_missing (file):
+    path = ''
     year, month, day, course = unpack_file (file)
+    formatted_date = year[2:] + month + day
+
     if os.path.exists (PATH_106 + course):
-        folder = re.compile (r'')
+        path = PATH_106
     elif os.path.exists (PATH_105 + course):
-        return false
+        path = PATH_105
+    else: # Not in either server -- file is missing!
+        return True
+    
+    date_folder_regex = re.compile ('{}.*'.format (formatted_date))
+    date_folders = list (filter (date_folder_regex.match, os.listdir (path + course)))
+    if not len (date_folders): # Folder does not exist
+        return True
+    
+    video_regex = re.compile ('{}-{}.*\.mp4'.format (formatted_date, course))
+    # If multiple folders look through all of them
+    for folder in date_folders:
+        print ("PATH:", path)
+        print ("COURSE:", course)
+        print ("FOLDER:", folder)
+        for file in os.listdir (path + course + '/' + folder):
+            if (video_regex.match (file)) and os.stat (path + course + '/' + folder + '/' + file).st_size > 0:
+                return False
+
     return True
 
 def check_dir (path, checked, dups, missing, unchecked):
